@@ -27,7 +27,7 @@ class WordDownload:
         self.db_collection = db.scraped_assets
 
     def create_folder(self):
-        Path('scraped_files/' + self.directory).mkdir(parents=True, exist_ok=True)
+        Path('data_sources/verblisten/' + self.directory).mkdir(parents=True, exist_ok=True)
 
     def get_word(self):
         if self.db_collection.count_documents({'word':self.verb}) == 1:
@@ -69,7 +69,7 @@ class WordDownload:
         return False if soup.title.string == "Zugriffe" else True
 
     def save_file(self):
-        with open(f'scraped_files/{self.directory}/{self.query["word"]}.htm', 'w') as f:
+        with open(f'data_sources/verblisten/{self.directory}/{self.query["word"]}.htm', 'w') as f:
             f.write(self.response.text)
         
     def update_document(self):

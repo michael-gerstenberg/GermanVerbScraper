@@ -32,7 +32,7 @@ class WordScrape:
         self.db.scraped_assets.update_one({'word': self.word}, {'$set':{'scrape_status': True}})
 
     def scrape_level(self):
-        file_name = 'scraped_files/definitions/' + self.word + '.htm'
+        file_name = 'data_sources/verblisten/definitions/' + self.word + '.htm'
         if Path(file_name).is_file():
             f = open(file_name, "r")
             soup = BeautifulSoup(f.read(), 'html.parser')
@@ -44,7 +44,7 @@ class WordScrape:
         return ''
 
     def scrape_grammar(self):
-        file_name = 'scraped_files/definitions/' + self.word + '.htm'
+        file_name = 'data_sources/verblisten/definitions/' + self.word + '.htm'
         if Path(file_name).is_file():
             f = open(file_name, "r")
             soup = BeautifulSoup(f.read(), 'html.parser')
@@ -83,7 +83,7 @@ class WordScrape:
         return ''
 
     def scrape_definitions(self):
-        file_name = 'scraped_files/definitions/' + self.word + '.htm'
+        file_name = 'data_sources/verblisten/definitions/' + self.word + '.htm'
         if Path(file_name).is_file():
             f = open(file_name, "r")
             soup = BeautifulSoup(f.read(), 'html.parser')
@@ -130,7 +130,7 @@ class WordScrape:
         return definitions
 
     def scrape_conjugations(self):
-        file_name = 'scraped_files/conjugations/' + self.word + '.htm'
+        file_name = 'data_sources/verblisten/conjugations/' + self.word + '.htm'
         if Path(file_name).is_file():
             f = open(file_name, "r")
             soup = BeautifulSoup(f.read(), 'html.parser')
@@ -176,7 +176,7 @@ class WordScrape:
         return ''
 
     def scrape_examples(self):
-        file_name = 'scraped_files/examples/' + self.word + '.htm'
+        file_name = 'data_sources/verblisten/examples/' + self.word + '.htm'
         if Path(file_name).is_file():
             f = open(file_name, "r")
             soup = BeautifulSoup(f.read(), 'html.parser')
