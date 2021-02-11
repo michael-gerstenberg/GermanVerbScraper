@@ -6,4 +6,5 @@
 config.py
 mongo_db_dumps/dict.verbs_de.json
 scraped_files.zip
+data_sources/
 scraped_files/
