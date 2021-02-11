@@ -4,6 +4,7 @@ import re
 import copy
 import pprint
 
+
 # after the thai data is reviewed and connected, a thai oriented database should be created
 # when something is reviewed it should be set to reviewed and added to the verbs_de database
 
