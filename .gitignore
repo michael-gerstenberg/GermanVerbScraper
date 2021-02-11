@@ -1,0 +1,9 @@
+.ENV/
+.vscode/
+*.pyc
+*.png
+.DS_Store
+config.py
+mongo_db_dumps/dict.verbs_de.json
+scraped_files.zip
+scraped_files/
