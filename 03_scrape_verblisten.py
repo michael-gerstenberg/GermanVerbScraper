@@ -14,25 +14,46 @@ class WordScrape:
         self.db = connect_mongo_db()
 
     def scrape_verb(self):
-        self.db.scraped_verbs.insert_one({
+        self.db.verbs_de.insert_one({
             'word': self.word,
             'level': self.scrape_level(),
             'conjugations': self.scrape_conjugations(),
-            'sentences': self.scrape_examples(),
+            'examples': self.scrape_examples(),
             'definitions': self.scrape_definitions(),
             'grammar': self.scrape_grammar(),
-            'sources': [{
+            'translations': self.scrape_translations(),
+            'source': {
                 'name': 'verbformen.de',
                 'license': 'CC-BY-SA 3.0'
-            }]
+            }
         })
         self.update_document()
 
     def update_document(self):
-        self.db.scraped_assets.update_one({'word': self.word}, {'$set':{'scrape_status': True}})
+        self.db.data_sources_verblisten.update_one({'word': self.word}, {'$set':{'scrape_status': True}})
+
+    def scrape_translations(self):
+        file_name = 'data_sources/verblisten/conjugations/' + self.word + '.htm'
+        if Path(file_name).is_file():
+            f = open(file_name, "r")
+            soup = BeautifulSoup(f.read(), 'html.parser')
+            f.close()
+            translations = []
+            for div in soup.find_all('div'):
+                if div.has_attr('lang'):
+                    language = div.get("lang")
+                    for span in div.find_all('span'):
+                        if len(span.contents) > 0 and len(span.contents[0]) > 0:
+                            translations.append({
+                                "language": div.get("lang"),
+                                "source": 'verbformen.de',
+                                "license": 'CC-BY-SA 3.0',
+                                "translation": span.contents[0]
+                            })
+        return translations
 
     def scrape_level(self):
-        file_name = 'scraped_files/definitions/' + self.word + '.htm'
+        file_name = 'data_sources/verblisten/definitions/' + self.word + '.htm'
         if Path(file_name).is_file():
             f = open(file_name, "r")
             soup = BeautifulSoup(f.read(), 'html.parser')
@@ -44,7 +65,7 @@ class WordScrape:
         return ''
 
     def scrape_grammar(self):
-        file_name = 'scraped_files/definitions/' + self.word + '.htm'
+        file_name = 'data_sources/verblisten/definitions/' + self.word + '.htm'
         if Path(file_name).is_file():
             f = open(file_name, "r")
             soup = BeautifulSoup(f.read(), 'html.parser')
@@ -56,6 +77,10 @@ class WordScrape:
                 },
                 'prepositions_and_context': [],
                 'usage': self.scrape_definitions_usage(soup),
+                'source': {
+                    'name': 'verbformen.de',
+                    'license': 'CC-BY-SA 3.0'
+                }
             }
             section_count = 0
             for section in soup.find_all('section'):
@@ -83,7 +108,7 @@ class WordScrape:
         return ''
 
     def scrape_definitions(self):
-        file_name = 'scraped_files/definitions/' + self.word + '.htm'
+        file_name = 'data_sources/verblisten/definitions/' + self.word + '.htm'
         if Path(file_name).is_file():
             f = open(file_name, "r")
             soup = BeautifulSoup(f.read(), 'html.parser')
@@ -92,7 +117,7 @@ class WordScrape:
             for div in soup.find_all('div'):
                 if div.get('class') is not None and 'rAbschnitt' in div.get('class'):
                     for section in div.find_all('section'):
-                        definition = {}
+                        definition = {"visible": True}
                         if 'wNr' in section.get('class'):
                             for div in section.find_all('div'):
                                 if div.get('class') is not None and ('wBst4' in div.get('class') or 'wBst2' in div.get('class') or 'wBst1' in div.get('class')):
@@ -102,6 +127,10 @@ class WordScrape:
                                     for a in div.find_all('a'):
                                         sub_defs.append(a.contents[0].strip())
                                     definition[div.h3.contents[0].lower().replace(' ', '_').replace('_(opposite)', '').replace('-', '_')] = sub_defs
+                            definition['source'] = {
+                                'name': 'verbformen.de',
+                                'license': 'CC-BY-SA 3.0'
+                            }
                             definitions.append(definition)
             return definitions
         return ''
@@ -130,7 +159,7 @@ class WordScrape:
         return definitions
 
     def scrape_conjugations(self):
-        file_name = 'scraped_files/conjugations/' + self.word + '.htm'
+        file_name = 'data_sources/verblisten/conjugations/' + self.word + '.htm'
         if Path(file_name).is_file():
             f = open(file_name, "r")
             soup = BeautifulSoup(f.read(), 'html.parser')
@@ -170,13 +199,17 @@ class WordScrape:
                     'infinitive_2': lines[16].split(', '),
                     'participle_1': lines[17].split(', '),
                     'participle_2': lines[18].split(', '),
+                },
+                'source': {
+                    'name': 'verbformen.de',
+                    'license': 'CC-BY-SA 3.0'
                 }
             }
             return conjugations
         return ''
 
     def scrape_examples(self):
-        file_name = 'scraped_files/examples/' + self.word + '.htm'
+        file_name = 'data_sources/verblisten/examples/' + self.word + '.htm'
         if Path(file_name).is_file():
             f = open(file_name, "r")
             soup = BeautifulSoup(f.read(), 'html.parser')
@@ -317,6 +350,10 @@ class WordScrape:
                         examples[86],
                         examples[87],
                     ],
+                },
+                'source': {
+                    'name': 'verbformen.de',
+                    'license': 'CC-BY-SA 3.0'
                 }
             }
             return examples_ordered
@@ -324,7 +361,7 @@ class WordScrape:
 
 def scrape_missing_files():
     db = connect_mongo_db()
-    for v in tqdm(db.scraped_assets.find({'scrape_status':False},{'word':1})):
+    for v in tqdm(db.data_sources_verblisten.find({'scrape_status':False},{'word':1})):
         WordScrape(v['word'])
 
 if __name__ == "__main__":
