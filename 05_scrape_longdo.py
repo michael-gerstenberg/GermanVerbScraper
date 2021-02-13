@@ -18,13 +18,13 @@ def check_verbs_in_longdo():
     negative = 0
     verbs = 0
     
-    f = open('scrapes/longdo/longdo_de_th_edited.txt')
+    f = open('data_sources/longdo/longdo_de_th_edited.txt')
     line = f.readline()
-    f_v = open('scrapes/longdo/longdo_de_th_edited_verbs.txt', 'a')
+    f_v = open('data_sources/longdo/longdo_de_th_edited_verbs_only.txt', 'a')
     # for verb in tqdm(verbs):
     while line:
-        word = line.split('	')[0].strip()
-        result = db.verbs.find({'keywords':word})
+        word = line.split('	')[0].strip().replace('sich ', '')
+        result = db.verbs_de.find({'keywords':word})
         leftovers = []
         if '(v)' in line:
 
@@ -72,6 +72,8 @@ def check_verbs_in_longdo():
 
 def extract_verbs():
     
+    leftovers = []
+
     empty_row = {
         'german_verb': '',
         'thai_translations': [],
@@ -83,13 +85,13 @@ def extract_verbs():
         'german_sentence': ''
     }
     
-    f = open('scrapes/longdo/longdo_de_th_edited_verbs.txt')
+    f = open('data_sources/longdo/longdo_de_th_edited_verbs_only.txt')
     line = f.readline()
     i = 0
     while line:
         i += 1
         row = copy.deepcopy(empty_row)
-        row['german_verb'] = line.split('	')[0]
+        row['german_verb'] = line.split('	')[0].replace('sich ', '')
         line = re.sub('(\|(.*?)\|)', '' , line)
         
         line_rest = line.split('(v) ')[1].strip()
@@ -118,22 +120,31 @@ def extract_verbs():
         line_translations = line_rest.split(', ')
         
         row['thai_translations'] = [sub.replace(',', '') for sub in line_translations]
+        ### $$$ sollte pro thranslation ein satensatz sein
+        db.verbs_de.update_one(
+            {
+                'keywords':row['german_verb']
+            },
+            {
+                "$addToSet": {
+                    "translations": {
+                        "language": "th",
+                        "examples": row['examples'],
+                        "score": 0,
+                        "definition_ids": [],
+                        "translations": row['thai_translations']
+                    }
+                }
+            }
+        )
+        # score 0 = not reviewed; score = most used translation for that word
+        print(row['german_verb'])
+        #pprint.pprint(row)
         
-        
-        pprint.pprint(row)
 
-            # print({
-            #     'translations': line_translations,
-            #     'examples': line_examples_and_rest
-            # })
-
-        # else:
-        #     print(line_rest.split(', '))
-
-        #print(line)
         line = f.readline()
 
-
+    #pprint.pprint(leftovers)
 
 
 
@@ -153,5 +164,5 @@ def list_wordtypes():
     f.close()
     
 if __name__ == "__main__":
-    #check_verbs_in_longdo()
-    extract_verbs()
+    # check_verbs_in_longdo() # reads the basic file and copys all verbs to a new file
+    extract_verbs() # extracts the data as good as possible and copies it into the database
