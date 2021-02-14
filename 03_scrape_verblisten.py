@@ -194,8 +194,8 @@ class WordScrape:
             examples_ordered = {
                 'indicative_active': {
                     'present': examples[0:6],
-                    'imperfect': examples[6:14],
-                    'perfect': examples[14:18],
+                    'imperfect': examples[6:12],
+                    'perfect': examples[12:18],
                     'plusquamperfect': examples[18:24],
                     'future': examples[24:32],
                     'future_perfect': examples[32:36],
