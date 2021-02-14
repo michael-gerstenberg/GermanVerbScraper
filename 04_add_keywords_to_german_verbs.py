@@ -6,9 +6,9 @@ import re
 db = connect_mongo_db()
 
 def main():
-    verbs = db.scraped_verbs.find()
+    verbs = db.verbs_de.find()
     for verb in tqdm(verbs):
-        db.scraped_verbs.update_one({'_id': verb['_id']}, {'$set':{'keywords': sorted(get_keywords(verb))}})
+        db.verbs_de.update_one({'_id': verb['_id']}, {'$set':{'keywords': sorted(get_keywords(verb))}})
 
 def get_keywords(verb):
     cut_first_word = {

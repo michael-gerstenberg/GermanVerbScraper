@@ -5,5 +5,7 @@
 .DS_Store
 config.py
 mongo_db_dumps/dict.verbs_de.json
+mongo_db_dumps/dict.verbs_de_with_keywords.json
 data_sources/
 data_sources/verblisten/
+google_creds.json
