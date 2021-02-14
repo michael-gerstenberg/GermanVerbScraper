@@ -136,7 +136,7 @@ class WordScrape:
         return ''
 
     def scrape_definitions_usage(self, soup: BeautifulSoup) -> dict:
-        definitions = {}  
+        definitions = {}
         for div in soup.find_all('div'):
             if div.get('class') is not None and 'rAbschnitt' in div.get('class'):
                 for section in div.find_all('section'):
@@ -159,7 +159,7 @@ class WordScrape:
         return definitions
 
     def scrape_conjugations(self):
-        file_name = 'data_sources/verblisten/conjugations/' + self.word + '.htm'
+        file_name = f'data_sources/verblisten/conjugations/{self.word}.htm'
         if Path(file_name).is_file():
             f = open(file_name, "r")
             soup = BeautifulSoup(f.read(), 'html.parser')
@@ -173,11 +173,11 @@ class WordScrape:
             conjugations = {
                 'indicative_active': {
                     'present': lines[0].split(', '),
-                    'imperfect': lines[1].split(', '), 
-                    'perfect': lines[2].split(', '), 
-                    'plusquamperfect': lines[3].split(', '), 
-                    'future': lines[4].split(', '), 
-                    'future_perfect': lines[5].split(', '), 
+                    'imperfect': lines[1].split(', '),
+                    'perfect': lines[2].split(', '),
+                    'plusquamperfect': lines[3].split(', '),
+                    'future': lines[4].split(', '),
+                    'future_perfect': lines[5].split(', '),
                 },
                 'subjunctive_active': {
                     'present': lines[6].split(', '),
@@ -209,7 +209,7 @@ class WordScrape:
         return ''
 
     def scrape_examples(self):
-        file_name = 'data_sources/verblisten/examples/' + self.word + '.htm'
+        file_name = f'data_sources/verblisten/examples/{self.word}.htm'
         if Path(file_name).is_file():
             f = open(file_name, "r")
             soup = BeautifulSoup(f.read(), 'html.parser')
@@ -226,134 +226,31 @@ class WordScrape:
                         i += 1
             examples_ordered = {
                 'indicative_active': {
-                    'present': [
-                        examples[0],
-                        examples[1],
-                        examples[2],
-                        examples[3],
-                        examples[4],
-                        examples[5],
-                    ],
-                    'imperfect': [
-                        examples[6],
-                        examples[7],
-                        examples[8],
-                        examples[9],
-                        examples[10],
-                        examples[11],
-                    ],
-                    'perfect': [
-                        examples[12],
-                        examples[13],
-                        examples[14],
-                        examples[15],
-                        examples[16],
-                        examples[17],
-                    ],
-                    'plusquamperfect': [
-                        examples[18],
-                        examples[19],
-                        examples[20],
-                        examples[21],
-                        examples[22],
-                        examples[23],
-                    ],
-                    'future': [
-                        examples[24],
-                        examples[25],
-                        examples[26],
-                        examples[27],
-                        examples[28],
-                        examples[29],
-                    ], 
-                    'future_perfect': [
-                        examples[30],
-                        examples[31],
-                        examples[32],
-                        examples[33],
-                        examples[34],
-                        examples[35],
-                    ], 
+                    'present': examples[0:6],
+                    'imperfect': examples[6:12],
+                    'perfect': examples[12:18],
+                    'plusquamperfect': examples[18:24],
+                    'future': examples[24:30],
+                    'future_perfect': examples[30:36],
                 },
                 'subjunctive_active': {
-                    'present': [
-                        examples[36],
-                        examples[37],
-                        examples[38],
-                        examples[39],
-                        examples[40],
-                        examples[41],
-                    ],
-                    'imperfect': [
-                        examples[42],
-                        examples[43],
-                        examples[44],
-                        examples[45],
-                        examples[46],
-                        examples[47],
-                    ],
-                    'perfect': [
-                        examples[48],
-                        examples[49],
-                        examples[50],
-                        examples[51],
-                        examples[52],
-                        examples[53],
-                    ],
-                    'plusquamperfect': [
-                        examples[54],
-                        examples[55],
-                        examples[56],
-                        examples[57],
-                        examples[58],
-                        examples[59],
-                    ],
-                    'future': [
-                        examples[60],
-                        examples[61],
-                        examples[62],
-                        examples[63],
-                        examples[64],
-                        examples[65],
-                    ],
-                    'future_perfect': [
-                        examples[66],
-                        examples[67],
-                        examples[68],
-                        examples[69],
-                        examples[70],
-                        examples[71],
-                    ],
+                    'present': examples[36:42],
+                    'imperfect': examples[42:48],
+                    'perfect': examples[48:54],
+                    'plusquamperfect': examples[54:60],
+                    'future': examples[60:66],
+                    'future_perfect': examples[66:72],
                 },
                 'conditional_active': {
-                    'imperfect': [
-                        examples[72],
-                        examples[73],
-                        examples[74],
-                        examples[75],
-                        examples[76],
-                        examples[77],
-                    ],
-                    'plusquamperfect': [
-                        examples[78],
-                        examples[79],
-                        examples[80],
-                        examples[81],
-                        examples[82],
-                        examples[83],
-                    ],
+                    'imperfect': examples[72:78],
+                    'plusquamperfect': examples[78:84],
                 },
                 'imperative_active': {
-                    'present': [
-                        examples[84],
-                        examples[85],
-                        examples[86],
-                        examples[87],
-                    ],
+                    'present': examples[84:],
                 },
                 'source': {
                     'name': 'verbformen.de',
-                    'license': 'CC-BY-SA 3.0'
+                    'license': 'CC-BY-SA 3.0',
                 }
             }
             return examples_ordered
