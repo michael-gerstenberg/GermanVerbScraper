@@ -130,7 +130,7 @@ class WordScrape:
         return definitions
 
     def scrape_conjugations(self):
-        file_name = 'data_sources/verblisten/conjugations/' + self.word + '.htm'
+        file_name = f'data_sources/verblisten/conjugations/{self.word}.htm'
         if Path(file_name).is_file():
             f = open(file_name, "r")
             soup = BeautifulSoup(f.read(), 'html.parser')
@@ -176,7 +176,7 @@ class WordScrape:
         return ''
 
     def scrape_examples(self):
-        file_name = 'data_sources/verblisten/examples/' + self.word + '.htm'
+        file_name = f'data_sources/verblisten/examples/{self.word}.htm'
         if Path(file_name).is_file():
             f = open(file_name, "r")
             soup = BeautifulSoup(f.read(), 'html.parser')
@@ -193,27 +193,27 @@ class WordScrape:
                         i += 1
             examples_ordered = {
                 'indicative_active': {
-                    'present': [examples[0:7],
-                    'imperfect': [examples[7:13],
-                    'perfect': [examples[13:19],
-                    'plusquamperfect': [examples[19:25],
-                    'future': [examples[25:31],
-                    'future_perfect': [examples[31:37],
+                    'present': examples[0:6],
+                    'imperfect': examples[6:14],
+                    'perfect': examples[14:18],
+                    'plusquamperfect': examples[18:24],
+                    'future': examples[24:32],
+                    'future_perfect': examples[32:36],
                 },
                 'subjunctive_active': {
-                    'present': [examples[37:43],
-                    'imperfect': [examples[43:49],
-                    'perfect': [examples[49:55],
-                    'plusquamperfect': [examples[55:61],
-                    'future': [examples[61:67],
-                    'future_perfect': [examples[67:73],
+                    'present': examples[36:42],
+                    'imperfect': examples[42:48],
+                    'perfect': examples[48:54],
+                    'plusquamperfect': examples[54:60],
+                    'future': examples[60:66],
+                    'future_perfect': examples[66:72],
                 },
                 'conditional_active': {
-                    'imperfect': [examples[73:79],
-                    'plusquamperfect': [examples[79:85],
+                    'imperfect': examples[72:78],
+                    'plusquamperfect': examples[78:84],
                 },
                 'imperative_active': {
-                    'present': [examples[85:],
+                    'present': examples[84:],
                 }
             }
             return examples_ordered
