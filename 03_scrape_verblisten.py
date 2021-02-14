@@ -197,8 +197,8 @@ class WordScrape:
                     'imperfect': examples[6:12],
                     'perfect': examples[12:18],
                     'plusquamperfect': examples[18:24],
-                    'future': examples[24:32],
-                    'future_perfect': examples[32:36],
+                    'future': examples[24:30],
+                    'future_perfect': examples[30:36],
                 },
                 'subjunctive_active': {
                     'present': examples[36:42],
