@@ -21,11 +21,7 @@ class WordScrape:
             'examples': self.scrape_examples(),
             'definitions': self.scrape_definitions(),
             'grammar': self.scrape_grammar(),
-            'translations': self.scrape_translations(),
-            'source': {
-                'name': 'verbformen.de',
-                'license': 'CC-BY-SA 3.0'
-            }
+            'translations': self.scrape_translations()
         })
         self.update_document()
 
@@ -128,7 +124,7 @@ class WordScrape:
                                         sub_defs.append(a.contents[0].strip())
                                     definition[div.h3.contents[0].lower().replace(' ', '_').replace('_(opposite)', '').replace('-', '_')] = sub_defs
                             definition['source'] = {
-                                'name': 'verbformen.de',
+                                'name': 'verben.de',
                                 'license': 'CC-BY-SA 3.0'
                             }
                             definitions.append(definition)
@@ -261,5 +257,11 @@ def scrape_missing_files():
     for v in tqdm(db.data_sources_verblisten.find({'scrape_status':False},{'word':1})):
         WordScrape(v['word'])
 
+# def reset_status_of_data_sources_verblisten():
+#     db = connect_mongo_db()
+#     db.data_sources.rename('data_sources_verblisten')
+#     db.data_sources_verblisten.update_many({}, {'$set':{'scrape_status': False}})
+    
 if __name__ == "__main__":
+    #reset_status_of_data_sources_verblisten()
     scrape_missing_files()

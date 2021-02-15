@@ -7,6 +7,8 @@ import operator
 # FOR UNIX export GOOGLE_APPLICATION_CREDENTIALS="/path/to/google_creds.json"
 # FOR UNIX export GOOGLE_APPLICATION_CREDENTIALS="/Users/michaelgerstenberg/Projects/OwnPosts/GermanVerbScraper/google_creds.json"
 
+# todo:      the calculation is not correct, if there are already thai results. then the sum needs to be subsctracted by the sum of thai translations
+
 class GoogleThaiTranslations:
     def __init__(self, word):
         self.connect_db()
@@ -25,7 +27,6 @@ class GoogleThaiTranslations:
         self.db.data_sources_google.update_one({'word': self.verb['word']}, {'$set':{'status': True}})
 
     def get_verb(self, word):
-        print('Translate: ' + word)
         return self.db.verbs_de.find_one({'word':word})
 
     def cluster_translations_by_languages(self):
@@ -50,7 +51,8 @@ class GoogleThaiTranslations:
         return dict(sorted(translation_summary.items(), key=lambda item: item[1], reverse=True))
 
     def calculate_translation_score(self):
-        sum_translations = len(self.verb['translations'])
+        # calculate sum without thai translations
+        sum_translations = len(self.verb['translations'])+1
         sum_translations_used = 0
         best_translations = []
         quote = 0
@@ -59,12 +61,13 @@ class GoogleThaiTranslations:
             sum_translations_used += count
             best_translations.append({
                 'language': 'th',
-                'source': 'google + verbformen.de',
-                'license': '???',
+                'source': 'googleAPI',
+                'license': 'paid',
                 'translation': word
             })
             quote += count/sum_translations
-            if quote > 0.618:
+            #if quote > 0.618:
+            if quote > 1:
                 break
 
         for counter, w  in enumerate(best_translations):
@@ -89,10 +92,6 @@ class GoogleThaiTranslations:
             )
 
     def translate_with_google_api(self, source_language_code, words, project_id="thaiwords"):
-        print(f"Language: {source_language_code}")
-        print("--words begin--")
-        print(words)
-        print("--words end--")
         """Translating Text."""
         client = translate.TranslationServiceClient()
         location = "global"
@@ -114,12 +113,14 @@ class GoogleThaiTranslations:
 
 def get_missing_translations_from_google():
     db = connect_mongo_db()
-    GoogleThaiTranslations('abbeten')
-    return True
-    for v in db.data_sources_google.find({'status':False}):
-        GoogleThaiTranslations(v['word'])
+    for v in db.data_sources_google.find({'status':False}).limit(15):
         print(v['word'])
-        break
+# e.g. the word "abbrechen" gives bad results. Why?
+#       best: ยก or 
+# ask Noon about the quality!!!
+# translate.google.de gives แท้ง -> means "abtreiben, abortion"
+# there are also sometimes a bit too much russian translations...
+        GoogleThaiTranslations(v['word'])
 
 def create_google_collection():
     db = connect_mongo_db()
