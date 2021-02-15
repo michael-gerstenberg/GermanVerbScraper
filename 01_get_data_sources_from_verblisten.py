@@ -38,7 +38,7 @@ def get_data_sources():
                     })
                 if len(links) < 1:
                     links_found = False
-    db.data_sources.insert_many(data_sources)
+    db.data_sources_verblisten.insert_many(data_sources)
 
 if __name__ == "__main__":
     get_data_sources()
