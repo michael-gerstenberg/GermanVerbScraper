@@ -14,7 +14,7 @@ class WordScrape:
         self.db = connect_mongo_db()
 
     def scrape_verb(self):
-        self.db.verbs_de.insert_one({
+        self.db.dict.verbs_de.insert_one({
             'word': self.word,
             'level': self.scrape_level(),
             'conjugations': self.scrape_conjugations(),
@@ -26,7 +26,7 @@ class WordScrape:
         self.update_document()
 
     def update_document(self):
-        self.db.data_sources_verblisten.update_one({'word': self.word}, {'$set':{'scrape_status': True}})
+        self.db.sources.verblisten.update_one({'word': self.word}, {'$set':{'scrape_status': True}})
 
     def scrape_translations(self):
         file_name = 'data_sources/verblisten/conjugations/' + self.word + '.htm'
@@ -254,14 +254,8 @@ class WordScrape:
 
 def scrape_missing_files():
     db = connect_mongo_db()
-    for v in tqdm(db.data_sources_verblisten.find({'scrape_status':False},{'word':1})):
+    for v in tqdm(db.sources.verblisten.find({'scrape_status':False},{'word':1})):
         WordScrape(v['word'])
 
-# def reset_status_of_data_sources_verblisten():
-#     db = connect_mongo_db()
-#     db.data_sources.rename('data_sources_verblisten')
-#     db.data_sources_verblisten.update_many({}, {'$set':{'scrape_status': False}})
-    
 if __name__ == "__main__":
-    #reset_status_of_data_sources_verblisten()
     scrape_missing_files()

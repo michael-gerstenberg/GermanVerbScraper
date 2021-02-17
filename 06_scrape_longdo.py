@@ -24,7 +24,7 @@ def check_verbs_in_longdo():
     # for verb in tqdm(verbs):
     while line:
         word = line.split('	')[0].strip().replace('sich ', '')
-        result = db.verbs_de.find({'keywords':word})
+        result = db.sources.verbs_de.find({'keywords':word})
         leftovers = []
         if '(v)' in line:
 
@@ -68,7 +68,7 @@ def check_verbs_in_longdo():
     # print(positive)
     # print(negative)
 
-    # for word in db.verbs.find():if __name__ == "__main__":
+    # for word in db.dict.verbs_de.find():if __name__ == "__main__":
 
 def extract_verbs():
     
@@ -121,7 +121,7 @@ def extract_verbs():
         
         row['thai_translations'] = [sub.replace(',', '') for sub in line_translations]
         ### $$$ sollte pro thranslation ein satensatz sein
-        db.verbs_de.update_one(
+        db.dict.verbs_de.update_one(
             {
                 'keywords':row['german_verb']
             },

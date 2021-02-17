@@ -16,7 +16,7 @@ db = connect_mongo_db()
 
 def get_all_translations():
     translations = {}
-    for translation_list in db.verbs_de.find({},{'translations':1}):
+    for translation_list in db.dict.verbs_de.find({},{'translations':1}):
         for translation in translation_list['translations']:
             if translation['language'] not in translations:
                 translations[translation['language']] = []
@@ -28,7 +28,7 @@ def get_all_translations():
 
 def get_german_verbs():
     words = []
-    for verb in db.verbs_de.find({},{'word':1}):
+    for verb in db.dict.verbs_de.find({},{'word':1}):
         words.append({
             'word': verb['word'],
             'language': 'de',
@@ -38,12 +38,12 @@ def get_german_verbs():
 
 def add_translations_to_db(language_code, translations):
     collection_name = 'google_translations_' + language_code
-    db[collection_name].drop()
-    db[collection_name].insert_many(translations)
+    db.dict[collection_name].drop()
+    db.dict[collection_name].insert_many(translations)
 
 def get_google_translation_collections():
     collections = []
-    for collection in db.list_collection_names():
+    for collection in db.dict.list_collection_names():
         if "google_translations_" in collection:
             collections.append(collection)
     return collections
@@ -51,7 +51,7 @@ def get_google_translation_collections():
 def get_translations_from_google(source_language_code):
     collection_name = 'google_translations_' + source_language_code
     source_words = []
-    for word in db[collection_name].find({'translations':[]}).limit(100):
+    for word in db.sources[collection_name].find({'translations':[]}).limit(100):
         source_words.append(word['word'])
     # if not source_words:
     if len(source_words) < 1:
@@ -65,7 +65,7 @@ def get_translations_from_google(source_language_code):
 
 def add_translation_to_document(source_language_code, source_word, target_language_code, result_word):
     collection_name = 'google_translations_' + source_language_code
-    db[collection_name].update_one(
+    db.sources[collection_name].update_one(
         {
             'word':source_word
         },
@@ -95,7 +95,7 @@ def calculate_sum_signs():
     collections = get_google_translation_collections()
     for collection in collections:
         print(collection)
-        for x in db[collection].find({},{'word':1}):
+        for x in db.sources[collection].find({},{'word':1}):
             sum += len(x['word'])
     print(sum)
 

@@ -24,7 +24,7 @@ class WordDownload:
             
     def connect_db(self):
         db = connect_mongo_db()
-        self.db_collection = db.data_sources_verblisten
+        self.db_collection = db.sources.verblisten
 
     def create_folder(self):
         Path('data_sources/verblisten/' + self.directory).mkdir(parents=True, exist_ok=True)
@@ -103,7 +103,7 @@ class WordDownload:
 
 def download_missing_files(directory):
     db = connect_mongo_db()
-    for v in db.data_sources_verblisten.find({directory + '.download_status':False},{'word':1}):
+    for v in db.sources.verblisten.find({directory + '.download_status':False},{'word':1}):
         #print(v['word'])
         WordDownload(v['word'], directory)
 

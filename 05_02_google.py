@@ -1,7 +1,7 @@
 import json
 import os
 from google.cloud import translate
-from mongo_db import connect_mongo_db, connect_to_mongo_db
+from mongo_db import connect_mongo_db
 import config
 import operator
 from datetime import datetime
@@ -34,51 +34,51 @@ class GoogleThaiTranslations:
         self.db = connect_mongo_db()
 
     def get_verb(self, word):
-        return self.db.verbs_de.find_one({'word':word})
+        return self.db.dict.verbs_de.find_one({'word':word})
 
 
 
 
 
-    def add_translation_to_data_source(self, source_lang, source_word, target_lang, result_word):
-        query = self.db.data_source_google_api.count_documents({
-            'word': source_word,
-            'language': source_lang,
-            'translated_from': {
-                'word':result_word,
-                'language':target_lang
-            }
-        })
-        if query < 1:
-            self.db.data_source_google_api.insert_one(
-                {
-                    'word':source_word,
-                    'language':source_lang,
-                    'translated_from': {
-                        'word':result_word,
-                        'language':target_lang
-                    },
-                    'date':datetime.now()
-                }
-            )
+    # def add_translation_to_data_source(self, source_lang, source_word, target_lang, result_word):
+    #     query = self.db.source.google_api.count_documents({
+    #         'word': source_word,
+    #         'language': source_lang,
+    #         'translated_from': {
+    #             'word':result_word,
+    #             'language':target_lang
+    #         }
+    #     })
+    #     if query < 1:
+    #         self.db.data_source_google_api.insert_one(
+    #             {
+    #                 'word':source_word,
+    #                 'language':source_lang,
+    #                 'translated_from': {
+    #                     'word':result_word,
+    #                     'language':target_lang
+    #                 },
+    #                 'date':datetime.now()
+    #             }
+    #         )
 
-    def get_translations_from_google_api(self, source_language_code, words):
-        project_id = "thaiwords" # for second google account => genial-runway-305023
-        client = translate.TranslationServiceClient()
-        location = "global"
-        parent = f"projects/{project_id}/locations/{location}"
-        response = client.translate_text(
-                parent= parent,
-                contents= words,
-                mime_type= "text/plain",  # mime types= text/plain, text/html
-                source_language_code= source_language_code,
-                target_language_code= "th",
-        )
-        new_list = []
-        # Save the translation for each input text provided
-        for translation in response.translations:
-            new_list.append(translation.translated_text)
-        return new_list
+    # def get_translations_from_google_api(self, source_language_code, words):
+    #     project_id = "thaiwords" # for second google account => genial-runway-305023
+    #     client = translate.TranslationServiceClient()
+    #     location = "global"
+    #     parent = f"projects/{project_id}/locations/{location}"
+    #     response = client.translate_text(
+    #             parent= parent,
+    #             contents= words,
+    #             mime_type= "text/plain",  # mime types= text/plain, text/html
+    #             source_language_code= source_language_code,
+    #             target_language_code= "th",
+    #     )
+    #     new_list = []
+    #     # Save the translation for each input text provided
+    #     for translation in response.translations:
+    #         new_list.append(translation.translated_text)
+    #     return new_list
 
     def get_translation_from_data_scource():
         return False
@@ -134,7 +134,7 @@ class GoogleThaiTranslations:
 
     def add_to_document(self):
         for t in self.best_translations:
-            self.db.verbs_de.update_one(
+            self.db.dict.verbs_de.update_one(
                 {
                     'word':self.word['word']
                 },
@@ -166,8 +166,8 @@ class GoogleThaiTranslations:
         return new_list
 
 
-    def update_source_document(self):
-        self.db.data_sources_google.update_one({'word': self.word['word']}, {'$set':{'status': True}})
+    # def update_source_document(self):
+    #     self.db.data_sources_google.update_one({'word': self.word['word']}, {'$set':{'status': True}})
 
 
 
@@ -187,36 +187,14 @@ def get_missing_translations_from_google():
 # there are also sometimes a bit too much russian translations...
         GoogleThaiTranslations(v['word'])
 
-def create_google_collection():
-    db = connect_mongo_db()
-
-    if db.data_sources_google.count_documents() < 1:
-
-        verbs = db.verbs_de.find({},{'word':1})
-        verbs_name_only = []
-        for verb in verbs:
-            verbs_name_only.append({
-                'word': verb['word'],
-                'status': False,
-            })
-
-        db.data_sources_google.insert_many(verbs_name_only)
-
 def import_collections():
-    client = connect_to_mongo_db()
-    db = client['sources']
+    db = connect_mongo_db()
     for filename in os.listdir('mongo_db_dumps/sources'):
         with open('mongo_db_dumps/sources/' + filename) as f:
             collection_name = f.name.split('.')[1]
             file_data = bson_jo.loads(f.read())
-            db[collection_name].insert_many(file_data)
+            db.sources[collection_name].insert_many(file_data)
 
 if __name__ == "__main__":
     # get_missing_translations_from_google()
     import_collections()
-
-
-
-
-
-# file: sources.google_translation_ar.json

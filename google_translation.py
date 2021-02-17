@@ -1,5 +1,5 @@
 from google.cloud import translate
-from mongo_db import connect_to_mongo_db
+from mongo_db import connect_mongo_db
 
 # def call_google_api(source_language_code, words):
 #     # project_id = "thaiwords" # 1st google account
@@ -26,11 +26,11 @@ class GoogleTranslation:
         self.source_language_code = source_language_code
         self.source_word = source_word
         self.target_language_code = target_language_code
-        self.connect_to_mongo_db()
+        self.connect_mongo_db()
         self.get_translation_from_google()
 
-    def connect_to_mongo_db(self):
-        self.db = connect_to_mongo_db()
+    def connect_mongo_db(self):
+        self.db = connect_mongo_db()
 
     def get_translation_from_google(self):
         translation_result = self.get_translation_from_google_collection()
