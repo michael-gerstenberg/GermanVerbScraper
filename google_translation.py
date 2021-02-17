@@ -35,7 +35,7 @@ class GoogleTranslation:
     def get_translation_from_google(self):
         translation_result = self.get_translation_from_google_collection()
         if translation_result != False:
-            self.translation_result
+            self.translation_result = translation_result
             return self.translation_result
         else:
             self.translation_result = self.get_translation_from_google_api()
@@ -61,16 +61,14 @@ class GoogleTranslation:
         collection_name = 'google_translations_' + self.source_language_code
         if self.db.sources[collection_name].count_documents({
             'word': self.source_word,
-            'translations': {
-                'language': self.target_language_code
-            }
+            'translations.language': self.target_language_code
         }) > 0:
             return self.db.sources[collection_name].find_one({
                 'word': self.source_word,
-                'translations': {
-                    'language': self.target_language_code
-                }
-            })
+                'translations.language': self.target_language_code
+            },{
+                'translations.word':1
+            })['translations'][0]['word']
         return False
 
     def add_translation_to_google_collection(self):
