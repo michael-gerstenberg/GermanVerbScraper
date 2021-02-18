@@ -2,8 +2,9 @@ from bs4 import BeautifulSoup
 from mongo_db import connect_mongo_db
 from pathlib import Path
 from tqdm import tqdm
+import pprint
 
-class WordScrape:
+class VerlistenWordScraper:
 
     def __init__(self, word):
         self.word = word
@@ -14,19 +15,23 @@ class WordScrape:
         self.db = connect_mongo_db()
 
     def scrape_verb(self):
-        self.db.dict.verbs_de.insert_one({
-            'word': self.word,
-            'level': self.scrape_level(),
-            'conjugations': self.scrape_conjugations(),
-            'examples': self.scrape_examples(),
-            'definitions': self.scrape_definitions(),
-            'grammar': self.scrape_grammar(),
-            'translations': self.scrape_translations()
+        # self.db.dict.verbs_de.insert_one({
+        #     'word': self.word,
+        #     'level': self.scrape_level(),
+        #     'conjugations': self.scrape_conjugations(),
+        #     'examples': self.scrape_examples(),
+        #     'definitions': self.scrape_definitions(),
+        #     'grammar': self.scrape_grammar()
+        # })
+        self.db.sources.verblisten.update_one({
+            'word': self.word
+        }, {
+            '$set':{
+                'scrape_status': True,
+                'translations': self.scrape_translations(),
+                'license': 'CC-BY-SA 3.0'
+            }
         })
-        self.update_document()
-
-    def update_document(self):
-        self.db.sources.verblisten.update_one({'word': self.word}, {'$set':{'scrape_status': True}})
 
     def scrape_translations(self):
         file_name = 'data_sources/verblisten/conjugations/' + self.word + '.htm'
@@ -42,8 +47,8 @@ class WordScrape:
                         if len(span.contents) > 0 and len(span.contents[0]) > 0:
                             translations.append({
                                 "language": div.get("lang"),
-                                "source": 'verbformen.de',
-                                "license": 'CC-BY-SA 3.0',
+                                # "source": 'verbformen.de',
+                                # "license": 'CC-BY-SA 3.0',
                                 "translation": span.contents[0]
                             })
         return translations
@@ -254,8 +259,53 @@ class WordScrape:
 
 def scrape_missing_files():
     db = connect_mongo_db()
-    for v in tqdm(db.sources.verblisten.find({'scrape_status':False},{'word':1})):
-        WordScrape(v['word'])
+    # db.dict.verbs_de.update_many({},{'$set':{'translations':[]}})
+    # for v in tqdm(db.sources.verblisten.find({'scrape_status':False},{'word':1})):    
+    #     VerlistenWordScraper(v['word'])
+    for verb in tqdm(db.dict.verbs_de.find()):
+        if verb['word'] == "machen":
+            continue
+        conjugations = {}
+        del verb['conjugations']['source']
+        for key_conjugation,conjugation in verb['conjugations'].items():
+            conjugations[key_conjugation] = {}
+            for key_modus,modus in conjugation.items():
+                conjugations[key_conjugation][key_modus] = {}
+                #for key_time,time in enumerate(modus):
+                conjugations[key_conjugation][key_modus] = []
+                i=-1
+                for c in modus:
+                    i += 1
+                    conjugations[key_conjugation][key_modus].append({
+                        'conjugation':c, 
+                    })
+                    try:
+                        if len(verb['examples'][key_conjugation][key_modus][i]) > 0:
+                            conjugations[key_conjugation][key_modus][i]['example'] = verb['examples'][key_conjugation][key_modus][i]
+                    except:
+                        michi = True
+
+
+                    # conjugations[key_conjugation][key_modus][key_time] = {
+                    #     'conjugation':time
+                    # }
+                    # if len(verb['examples'][key_conjugation][key_modus][key_time]) > 1:
+                    #     conjugations[key_conjugation][key_modus][key_time] = {
+                    #         'example': verb['examples'][key_conjugation][key_modus][key_time]
+                    #     }
+        conjugations['source'] = {
+            'name': 'verbformen.de',
+            'license': 'CC-BY-SA 3.0',
+        }
+        #print(conjugations)
+            
+
+        # db.dict.verbs_de.update_one({'_id': verb['_id']}, {'$set':{'conjugations': conjugations }})
+        # db.dict.verbs_de.update_one({'_id': verb['_id']}, {'$unset':{'examples': 1}})
+
+
+
+
 
 if __name__ == "__main__":
     scrape_missing_files()

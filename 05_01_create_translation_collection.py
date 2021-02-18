@@ -38,8 +38,8 @@ def get_german_verbs():
 
 def add_translations_to_db(language_code, translations):
     collection_name = 'google_translations_' + language_code
-    db.dict[collection_name].drop()
-    db.dict[collection_name].insert_many(translations)
+    db.sources[collection_name].drop()
+    db.sources[collection_name].insert_many(translations)
 
 def get_google_translation_collections():
     collections = []
@@ -100,6 +100,14 @@ def calculate_sum_signs():
     print(sum)
 
 if __name__ == "__main__":
+
+# next should be:
+#   put all translations away to the sources verblisten collection
+
+
+    collections = get_google_translation_collections()
+    for collection in collections:
+        db.dict[collection].drop()
 
     source_language_code = 'de'
     source_word = 'essen'

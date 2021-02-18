@@ -8,31 +8,28 @@ from captcha import solve_captcha
 from mongo_db import connect_mongo_db
 from pathlib import Path
 
-class WordDownload:
+class VerblistenPageDownload:
 
     def __init__(self, verb, directory):
         self.directory = directory
-        self.verb = verb
-        self.connect_db()
+        self.word = self.get_verb(verb)
         self.create_folder()
-        self.success = False
-        if self.get_word():
+        self.db_collection = connect_db()
+        if self.word:
             self.download_content_captcha_safe()
             self.save_file()
             self.update_document()
-            self.success = True
             
     def connect_db(self):
         db = connect_mongo_db()
-        self.db_collection = db.sources.verblisten
+        return db.sources.verblisten
 
     def create_folder(self):
         Path('data_sources/verblisten/' + self.directory).mkdir(parents=True, exist_ok=True)
 
-    def get_word(self):
-        if self.db_collection.count_documents({'word':self.verb}) == 1:
-            self.query = self.db_collection.find_one({'word':self.verb})
-            return True
+    def get_verb(self, verb):
+        if self.db_collection.count_documents({'word':verb}) == 1:
+            return self.db_collection.find_one({'word':verb})
         return False
 
     def download_content_captcha_safe(self):
@@ -101,13 +98,9 @@ class WordDownload:
             print('Image couldn\'t be retrieved. Trying again ...')
             return
 
-def download_missing_files(directory):
-    db = connect_mongo_db()
-    for v in db.sources.verblisten.find({directory + '.download_status':False},{'word':1}):
-        #print(v['word'])
-        WordDownload(v['word'], directory)
-
 if __name__ == "__main__":
-    download_missing_files('conjugations')
-    download_missing_files('examples')
-    download_missing_files('definitions')
+    db = connect_mongo_db()
+    directories = ['conjugations', 'examples', 'definitions']
+    for directory in directories:
+        for v in db.sources.verblisten.find({directory + '.download_status':False},{'word':1}):
+            VerblistenPageDownload(v['word'], directory)
