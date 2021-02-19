@@ -10,22 +10,18 @@ from pathlib import Path
 
 class VerblistenPageDownload:
 
-    def __init__(self, verb, directory):
-        self.directory = directory
+    def __init__(self, verb, component):
+        self.component = component
         self.word = self.get_verb(verb)
-        self.create_folder()
-        self.db_collection = connect_db()
+        self.db_collection = self.connect_db()
         if self.word:
             self.download_content_captcha_safe()
             self.save_file()
-            self.update_document()
+            self.mark_page_as_downloaded()
             
     def connect_db(self):
         db = connect_mongo_db()
         return db.sources.verblisten
-
-    def create_folder(self):
-        Path('data_sources/verblisten/' + self.directory).mkdir(parents=True, exist_ok=True)
 
     def get_verb(self, verb):
         if self.db_collection.count_documents({'word':verb}) == 1:
@@ -41,22 +37,25 @@ class VerblistenPageDownload:
                 captcha_is_failing = True
                 while(captcha_is_failing):
                     try:
-                        self.handle_captcha(self.query[self.directory]['url'])
+                        self.handle_captcha(self.query[self.component]['url'])
                         captcha_is_failing = False
                     except:
                         captcha_is_failing = True
                         print('Captcha solving failed. Trying again ...')
                         time.sleep(5)
 
-    def download_content(self):
         # the certificate of that website is not valid anymore
-        if self.directory == 'definitions':
-            self.query[self.directory]['url'] = self.query[self.directory]['url'].replace('https', 'http')
-        print('Downloading ' + self.directory + ' from ' + self.query[self.directory]['url'])
+        # todo: $$$ change the download uri from definitions to this one: 
+        #           https://www.verben.de/verben/essen.htm
+        # if self.component == 'definitions':
+        #     self.query[self.component]['url'] = self.query[self.component]['url'].replace('https', 'http')
+    def download_content(self):
+        # here remove the request_is_Failing ... put into other 
+        print('Downloading ' + self.component + ' from ' + self.query[self.component]['url'])
         request_is_failing = True
         while(request_is_failing):
             try:
-                self.response = requests.get(self.query[self.directory]['url'])
+                self.response = requests.get(self.query[self.component]['url'])
                 request_is_failing = False
             except:
                 print('Page request failed. Trying again ...')
@@ -66,11 +65,11 @@ class VerblistenPageDownload:
         return False if soup.title.string == "Zugriffe" else True
 
     def save_file(self):
-        with open(f'data_sources/verblisten/{self.directory}/{self.query["word"]}.htm', 'w') as f:
+        with open(f'data_sources/verblisten/{self.component}/{self.query["word"]}.htm', 'w') as f:
             f.write(self.response.text)
         
-    def update_document(self):
-        self.db_collection.update_one({'_id': self.query['_id']}, {'$set':{self.directory + '.download_status': True}})
+    def mark_page_as_downloaded(self):
+        self.db_collection.update_one({'_id': self.query['_id']}, {'$set':{self.component + '.download_status': True}})
 
     def handle_captcha(self, url):
         image_url = 'https://www.verbformen.de/zugriffe/captcha.png'
@@ -98,9 +97,13 @@ class VerblistenPageDownload:
             print('Image couldn\'t be retrieved. Trying again ...')
             return
 
-if __name__ == "__main__":
+def main():
     db = connect_mongo_db()
-    directories = ['conjugations', 'examples', 'definitions']
-    for directory in directories:
-        for v in db.sources.verblisten.find({directory + '.download_status':False},{'word':1}):
-            VerblistenPageDownload(v['word'], directory)
+    components = ['conjugations', 'examples', 'definitions']
+    for component in components:
+        Path('data_sources/verblisten/' + component).mkdir(parents=True, exist_ok=True)
+        for v in db.sources.verblisten.find({component + '.download_status':False},{'word':1}):
+            VerblistenPageDownload(v['word'], component)
+
+if __name__ == "__main__":
+    main()
