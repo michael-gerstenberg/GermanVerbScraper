@@ -1,18 +1,81 @@
+# save order also with the verb documents
+
 from bs4 import BeautifulSoup
 from mongo_db import connect_mongo_db
 from pathlib import Path
 from tqdm import tqdm
 import pprint
+from datetime import datetime
 
-class VerlistenWordScraper:
+class NetzverbWordScraper:
 
-    def __init__(self, word):
-        self.word = word
+    def __init__(self, wordtype, id):
+        self.wordtype = wordtype
+        self.collection_name = 'verblisten_' + wordtype
         self.connect_db()
-        self.scrape_verb()
+        self.document = self.get_document(id)
+        if wordtype == "adj_adv":
+            self.scrape_adj_adv()
+        #self.scrape_verb()
+
+    # functions for all wordtypes
 
     def connect_db(self):
         self.db = connect_mongo_db()
+
+    def get_document(self, id):
+        return self.db.sources[self.collection_name].find_one({'_id': id})
+
+    def get_file_content(self, file_name):
+        if Path(file_name).is_file():
+            f = open(file_name, "r")
+            soup = BeautifulSoup(f.read(), 'html.parser')
+            f.close()
+            return soup
+        return False
+
+    # Section ADJ ADV
+
+    def scrape_adj_adv(self):
+        file_name = 'data_sources/netzverb/adj_adv/' + self.document['url'].split('/')[-1]
+        print(file_name)
+        file_content = self.get_file_content(file_name)
+        if file_content:
+            self.db.sources[self.collection_name].update_one({
+                '_id': self.document['_id']
+            }, {
+                '$set':{
+                    'downloaded_date': datetime.now(),          # $$$ remove after first iteration!
+                    'scrape_status': True,
+                    'scraped_date': datetime.now(),
+                    'scraped_content': {
+                        'comparisons': self.scrape_adj_adv_comparisons(file_content),
+                        'strong_declensions': self.scrape_adj_adv_declensions(file_content, 1),
+                        'weak_declensions': self.scrape_adj_adv_declensions(file_content, 2),
+                        'mixed_declensions': self.scrape_adj_adv_declensions(file_content, 3),
+                        'declension_order': ['nom', 'gen', 'dat', 'acc'],
+                    }
+                }
+            })
+
+    def scrape_adj_adv_comparisons(self, file_content):
+        comparisons = file_content.find_all('div', class_='vTxtTbl')
+        comparison_rows = comparisons[0].find_all('td')
+        return {
+            'positive': comparison_rows[0].contents[0],
+            'comparative': comparison_rows[1].contents[0],
+            'superlative': comparison_rows[2].contents[0],
+        }
+    
+    def scrape_adj_adv_declensions(self, file_content, counter):
+        strong_declensions = file_content.find_all('ul')[counter].find_all('li')
+        strong_declensions_scraped = {}
+        types = ['masculine', 'neutral', 'feminine', 'plural']
+        for counter,li in enumerate(strong_declensions):
+            strong_declensions_scraped[types[counter]] = str(li).split('\n')[2].split(', ')
+        return strong_declensions_scraped
+
+    # Section Verbs $$$ no clean code!
 
     def scrape_verb(self):
         # self.db.dict.verbs_de.insert_one({
@@ -24,7 +87,7 @@ class VerlistenWordScraper:
         #     'grammar': self.scrape_grammar()
         # })
         self.db.sources.verblisten.update_one({
-            'word': self.word
+            '_id': self.document['_id']
         }, {
             '$set':{
                 'scrape_status': True,
@@ -257,55 +320,23 @@ class VerlistenWordScraper:
             return examples_ordered
         return ''
 
+
 def scrape_missing_files():
     db = connect_mongo_db()
     # db.dict.verbs_de.update_many({},{'$set':{'translations':[]}})
-    # for v in tqdm(db.sources.verblisten.find({'scrape_status':False},{'word':1})):    
-    #     VerlistenWordScraper(v['word'])
-    for verb in tqdm(db.dict.verbs_de.find()):
-        if verb['word'] == "machen":
-            continue
-        conjugations = {}
-        del verb['conjugations']['source']
-        for key_conjugation,conjugation in verb['conjugations'].items():
-            conjugations[key_conjugation] = {}
-            for key_modus,modus in conjugation.items():
-                conjugations[key_conjugation][key_modus] = {}
-                #for key_time,time in enumerate(modus):
-                conjugations[key_conjugation][key_modus] = []
-                i=-1
-                for c in modus:
-                    i += 1
-                    conjugations[key_conjugation][key_modus].append({
-                        'conjugation':c, 
-                    })
-                    try:
-                        if len(verb['examples'][key_conjugation][key_modus][i]) > 0:
-                            conjugations[key_conjugation][key_modus][i]['example'] = verb['examples'][key_conjugation][key_modus][i]
-                    except:
-                        michi = True
+    # for v in tqdm(db.sources.verblisten.find({'scrape_status':False},{'_id':1, word':1})):    
+    #     NetzverbWordScraper(v['_id'])
 
-
-                    # conjugations[key_conjugation][key_modus][key_time] = {
-                    #     'conjugation':time
-                    # }
-                    # if len(verb['examples'][key_conjugation][key_modus][key_time]) > 1:
-                    #     conjugations[key_conjugation][key_modus][key_time] = {
-                    #         'example': verb['examples'][key_conjugation][key_modus][key_time]
-                    #     }
-        conjugations['source'] = {
-            'name': 'verbformen.de',
-            'license': 'CC-BY-SA 3.0',
-        }
-        #print(conjugations)
-            
-
-        # db.dict.verbs_de.update_one({'_id': verb['_id']}, {'$set':{'conjugations': conjugations }})
-        # db.dict.verbs_de.update_one({'_id': verb['_id']}, {'$unset':{'examples': 1}})
-
+# only valid vor adj right now
+def scrape_new_files(wordtype):
+    db = connect_mongo_db()
+    collection_name = 'verblisten_' + wordtype
+    for word in tqdm(db.sources[collection_name].find({'scrape_status':False},{'_id':1}).limit(1)):
+        NetzverbWordScraper(wordtype, word['_id'])
 
 
 
 
 if __name__ == "__main__":
-    scrape_missing_files()
+    #scrape_missing_files()
+    scrape_new_files('adj_adv')

@@ -94,7 +94,7 @@ def get_adj_adv_data_sources(base_url = 'https://www.verbformen.de/suche/deklina
 
     for a in soup.find_all('a', class_='vSuchWrt'):
         link = 'https://www.verbformen.de' + a.get('href')
-        if '?w=' not in link:
+        if '?w=' not in link and '?i=' not in link:
             data_sources.append({
                 'url': link,
                 'download_status': False,
@@ -107,10 +107,24 @@ def get_adj_adv_data_sources(base_url = 'https://www.verbformen.de/suche/deklina
             data_sources += get_adj_adv_data_sources(further_link)
     return data_sources
 
-def check_doubles():
-    for v in db.sources.verblisten_adj_adv.find({},{'_id':1, 'url':1}):
-        if db.sources.verblisten_adj_adv.count_documents({'url': v['url']}) > 1:
-            db.sources.verblisten_adj_adv.delete_one({'_id':v['_id']})
+
+def check_doubles_opt():
+    db = connect_mongo_db()
+    links_counter = {}
+    for w in db.sources.verblisten_substantives.find({},{'url':1}):
+        if w['url'] not in links_counter:
+            links_counter[w['url']] = 0
+        links_counter[w['url']] += 1
+
+#    print(len(links_counter.keys()))
+
+    for link, counter in links_counter.items():
+        if counter > 1:
+            quantity_to_del = counter - 1
+            while quantity_to_del > 0:
+                quantity_to_del -= 1
+                db.sources.verblisten_substantives.delete_one({'url':link})
+
 
 if __name__ == "__main__":
 
@@ -123,11 +137,11 @@ if __name__ == "__main__":
     #         )
     
 
-    letters = "abcdefghijklmnopqrstuvwxz"
-    for letter in letters:
-        print(letter)
-        if db.sources.verblisten_substantives.count_documents({'letter': letter}) < 1:
-            db.sources.verblisten_substantives.insert_many(
-                get_substantives_data_sources(f'https://www.verben.de/suche/substantive/?w={letter}')
-            )
+    # letters = "abcdefghijklmnopqrstuvwxz"
+    # for letter in letters:
+    #     print(letter)
+    #     if db.sources.verblisten_substantives.count_documents({'letter': letter}) < 1:
+    #         db.sources.verblisten_substantives.insert_many(
+    #             get_substantives_data_sources(f'https://www.verben.de/suche/substantive/?w={letter}')
+    #         )
     #get_verb_data_sources()
