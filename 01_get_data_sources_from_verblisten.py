@@ -42,6 +42,10 @@ def get_verb_data_sources():
                     links_found = False
     db.sources.verblisten_verbs.insert_many(data_sources)
 
+# remove deklination/adjektive from subsctantives
+# here there are two pages, but only one is visible here
+# https://www.verbformen.de/deklination/substantive/Pizza.htm
+# https://www.verben.de/substantive/Pizza.htm
 def get_substantives_data_sources(base_url = 'https://www.verben.de/suche/substantive/'):
     print(base_url)
     data_sources = []
@@ -131,8 +135,8 @@ if __name__ == "__main__":
     # letters = "abcdefghijklmnopqrstuvwxyz"
     # for letter in letters:
     #     print(letter)
-    #     if db.sources.verblisten_adj_adv.count_documents({'letter': letter}) < 1:
-    #         db.sources.verblisten_adj_adv.insert_many(
+    #     if db.sources.netzverb_adj_adv.count_documents({'letter': letter}) < 1:
+    #         db.sources.netzverb_adj_adv.insert_many(
     #             get_adj_adv_data_sources(f'https://www.verbformen.de/suche/deklination/adjektive/?w={letter}')
     #         )
     

@@ -11,7 +11,7 @@ class NetzverbWordScraper:
 
     def __init__(self, wordtype, id):
         self.wordtype = wordtype
-        self.collection_name = 'verblisten_' + wordtype
+        self.collection_name = 'netzverb_' + wordtype
         self.connect_db()
         self.document = self.get_document(id)
         if wordtype == "adj_adv":
@@ -34,18 +34,31 @@ class NetzverbWordScraper:
             return soup
         return False
 
-    # Section ADJ ADV
-
-    def scrape_adj_adv(self):
-        file_name = 'data_sources/netzverb/adj_adv/' + self.document['url'].split('/')[-1]
-        print(file_name)
-        file_content = self.get_file_content(file_name)
-        if file_content:
+    ## works only for urls directly on root
+    def check_if_page_is_valid(self, file_content):
+        if file_content.title.string == "503 Service Unavailable":
             self.db.sources[self.collection_name].update_one({
                 '_id': self.document['_id']
             }, {
                 '$set':{
-                    'downloaded_date': datetime.now(),          # $$$ remove after first iteration!
+                    'download_status': False
+                }
+            })
+            return False
+        return True
+
+    # Section ADJ ADV
+
+    def scrape_adj_adv(self):
+        file_name = 'data_sources/netzverb/adj_adv/declensions/' + self.document['url'].split('/')[-1]
+        file_content = self.get_file_content(file_name)
+        if file_content and self.check_if_page_is_valid(file_content):
+            print(file_name)
+            self.db.sources[self.collection_name].update_one({
+                '_id': self.document['_id']
+            }, {
+                '$set':{
+                    'word': self.scrape_adj_adv_word(file_content),
                     'scrape_status': True,
                     'scraped_date': datetime.now(),
                     'scraped_content': {
@@ -57,6 +70,9 @@ class NetzverbWordScraper:
                     }
                 }
             })
+
+    def scrape_adj_adv_word(self, file_content):
+        return file_content.title.string.replace('Deklination und Steigerung ', '').replace(' | Alle Formen, Plural, Downloads, Sprachausgabe', '')
 
     def scrape_adj_adv_comparisons(self, file_content):
         comparisons = file_content.find_all('div', class_='vTxtTbl')
@@ -330,12 +346,9 @@ def scrape_missing_files():
 # only valid vor adj right now
 def scrape_new_files(wordtype):
     db = connect_mongo_db()
-    collection_name = 'verblisten_' + wordtype
-    for word in tqdm(db.sources[collection_name].find({'scrape_status':False},{'_id':1}).limit(1)):
+    collection_name = 'netzverb_' + wordtype
+    for word in db.sources[collection_name].find({'scrape_status':False,'download_status':True},{'_id':1}).sort("url",-1):
         NetzverbWordScraper(wordtype, word['_id'])
-
-
-
 
 if __name__ == "__main__":
     #scrape_missing_files()
