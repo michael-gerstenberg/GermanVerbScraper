@@ -1,6 +1,5 @@
-# there could be something added to be able to scrape it again and again
-# include a date when it was downloaded the last time and when it was scraped the last time ...
 
+# include a date when it was downloaded the last time and when it was scraped the last time ...
 
 import mechanicalsoup
 import requests
@@ -100,31 +99,6 @@ class NetzverbPageDownload:
             }
         })
 
-    # def handle_captcha(self, url):
-    #     image_url = 'https://www.verbformen.de/zugriffe/captcha.png'
-    #     if "woerter.net" in url:
-    #         image_url = 'http://www.woerter.net/zugriffe/captcha.png'
-    #     filename = 'captcha.png'
-    #     r = requests.get(image_url, stream = True)
-    #     if r.status_code == 200:
-    #         r.raw.decode_content = True
-    #         with open(filename,'wb') as f:
-    #             shutil.copyfileobj(r.raw, f)
-    #         print('Captcha is getting solved...')
-    #         answer = solve_captcha('captcha.png')
-    #         browser = mechanicalsoup.StatefulBrowser()
-    #         browser.open(url)
-    #         # browser.select_form().print_summary()
-    #         browser.select_form()
-    #         try:
-    #             browser["captcha"] = answer
-    #         except:
-    #             return
-    #         browser.submit_selected()
-    #         return
-    #     else:
-    #         print('Image couldn\'t be retrieved. Trying again ...')
-    #         return
 
 
 #wtf why are verbs in substantives?

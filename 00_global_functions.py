@@ -7,6 +7,9 @@ from datetime import datetime
 
 db = connect_mongo_db()
 
+
+
+
 # rename a collection
 # db.sources.netzverb_adj_adv_new.rename('netzverb_adj_adv')
 
@@ -72,11 +75,14 @@ db = connect_mongo_db()
 
 
 documents = []
-for w in db.sources.verblisten.find({}).limit(10000000):
+for w in db.sources.verblisten.find({}).limit(100000):
+    verb = db.dict.verbs_de.find_one({'word': w['word']})
     
-    modified = w['scraped_content']
-    modified['declension_sorting'] = w['scraped_content']['declension_order']
-    del modified['declension_order']
+    del verb['conjugations']['source']
+    del verb['grammar']['source']
+    for counter,definition in enumerate(verb['definitions']):
+        del verb['definitions'][counter]['source']
+        del verb['definitions'][counter]['visible']
 
     document = {
         'word': w['word'],
@@ -89,7 +95,7 @@ for w in db.sources.verblisten.find({}).limit(10000000):
                 'scraped_date': datetime.now(),
             },
             'definitions': {
-                'url': w['definitions']['url'],
+                'url': w['definitions']['url'].replace('https://www.woerter.net/verbs/', 'https://www.verben.de/verben/'),
                 'download_status': True,
                 'downloaded_date': datetime.now(),
                 'scrape_status': True,
@@ -105,8 +111,12 @@ for w in db.sources.verblisten.find({}).limit(10000000):
         },
         'license': 'CC-BY-SA 3.0',
         'scraped_content': {
+            'level': verb['level'],
+            'conjugations': verb['conjugations'],
+            'definitions': verb['definitions'],
+            'grammar': verb['grammar'],
             'translations': w['translations'],
         },
     }
     documents.append(document)
-db.sources.netzverb_adj_adv_new.insert_many(documents)
+db.sources.netzverb_verbs.insert_many(documents)

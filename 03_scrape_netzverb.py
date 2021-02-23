@@ -12,16 +12,17 @@ class NetzverbWordScraper:
     def __init__(self, wordtype, id):
         self.wordtype = wordtype
         self.collection_name = 'netzverb_' + wordtype
-        self.connect_db()
+        self.db = self.connect_db()
         self.document = self.get_document(id)
         if wordtype == "adj_adv":
             self.scrape_adj_adv()
-        #self.scrape_verb()
+        elif wordtype == "verbs":
+            self.scrape_verb()
 
     # functions for all wordtypes
 
     def connect_db(self):
-        self.db = connect_mongo_db()
+        return connect_mongo_db()
 
     def get_document(self, id):
         return self.db.sources[self.collection_name].find_one({'_id': id})
@@ -90,6 +91,19 @@ class NetzverbWordScraper:
         for counter,li in enumerate(strong_declensions):
             strong_declensions_scraped[types[counter]] = str(li).split('\n')[2].split(', ')
         return strong_declensions_scraped
+
+    # Section VERBS
+
+    def scrape_verb(self):
+        self.db..update_one({
+            '_id': self.document['_id']
+        }, {
+            '$set':{
+                'scrape_status': True,
+                'translations': self.scrape_translations(),
+                'license': 'CC-BY-SA 3.0'
+            }
+        })
 
     # Section Verbs $$$ no clean code!
 

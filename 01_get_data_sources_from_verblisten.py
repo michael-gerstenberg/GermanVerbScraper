@@ -1,3 +1,4 @@
+# there could be something added to be able to scrape it again and again
 import requests
 import time
 import string
