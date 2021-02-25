@@ -5,8 +5,9 @@ import time
 from bs4 import BeautifulSoup
 import requests
 
-from mongo_db import connect_mongo_db
 from captcha import solve_captcha_netzverb
+from mongo_db import connect_mongo_db
+import netzverb_functions
 
 class NetzverbPageDownload:
 
