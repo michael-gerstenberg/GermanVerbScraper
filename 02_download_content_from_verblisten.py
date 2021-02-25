@@ -1,7 +1,5 @@
-import mechanicalsoup
 import requests
-import string
-import shutil
+# import shutil
 import time
 from bs4 import BeautifulSoup
 from captcha import solve_captcha_netzverb

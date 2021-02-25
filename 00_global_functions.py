@@ -11,7 +11,7 @@ db = connect_mongo_db()
 
 
 # rename a collection
-# db.sources.netzverb_adj_adv_new.rename('netzverb_adj_adv')
+#db.sources.netzverb_adj_adv.rename('netzverb_adjectives')
 
 # change status of all
 
