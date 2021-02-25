@@ -6,6 +6,9 @@ from bs4 import BeautifulSoup
 from mongo_db import connect_mongo_db
 from captcha import solve_captcha_netzverb
 
+#wtf why are verbs in substantives?
+
+
 db = connect_mongo_db()
 
 def get_verb_data_sources():
