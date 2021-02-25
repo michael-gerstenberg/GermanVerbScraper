@@ -1,6 +1,3 @@
-
-# include a date when it was downloaded the last time and when it was scraped the last time ...
-
 import mechanicalsoup
 import requests
 import string
@@ -33,7 +30,6 @@ class NetzverbPageDownload:
     def get_document(self, id):
         if self.db_collection.count_documents({'_id':id}) == 1:
             self.document = self.db_collection.find_one({'_id':id})
-            #print(self.document)
             return self.db_collection.find_one({'_id':id})
         return False
 
@@ -59,13 +55,6 @@ class NetzverbPageDownload:
                         print('Captcha solving failed. Trying again ...')
                         time.sleep(5)
 
-        # the certificate of that website is not valid anymore
-        # todo: $$$ change the download uri from definitions to this one: 
-        #           https://www.verben.de/verben/essen.htm
-        # if self.component == 'definitions':
-        #     self.document[self.component]['url'] = self.document[self.component]['url'].replace('https', 'http')
-        # should be brought to the 01 where the links are get ...
-
     def download_content(self):
         # here remove the request_is_Failing ... put into other 
         print('Downloading ' + self.component + ' from ' + self.url)
@@ -83,7 +72,6 @@ class NetzverbPageDownload:
 
     def save_file(self):
         file_name = self.url.split('/')[-1]
-        #print(f'data_sources/netzverb/{self.wordtype}/{self.component}/{file_name}')
         with open(f'data_sources/netzverb/{self.wordtype}/{self.component}/{file_name}', 'w') as f:
             f.write(self.response.text)
 
@@ -99,12 +87,9 @@ class NetzverbPageDownload:
             }
         })
 
-
-
-#wtf why are verbs in substantives?
-
 def main():
     db = connect_mongo_db()
+    # wordtypes = get_wordtypes_and_components()
     wordtypes = {
         'substantives': ['declensions', 'definitions']
     }

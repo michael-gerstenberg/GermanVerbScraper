@@ -6,18 +6,24 @@ from pathlib import Path
 from tqdm import tqdm
 import pprint
 from datetime import datetime
+import re
+from bson.objectid import ObjectId
 
 class NetzverbWordScraper:
 
-    def __init__(self, wordtype, id):
+    def __init__(self, id, wordtype, component):
         self.wordtype = wordtype
+        self.component = component
         self.collection_name = 'netzverb_' + wordtype
         self.db = self.connect_db()
         self.document = self.get_document(id)
-        if wordtype == "adj_adv":
+        self.file_path = 'data_sources/netzverb/' + wordtype + '/' + component + '/' + self.document['components'][component]['url'].split('/')[-1]
+        if wordtype == "adj_adv":           # structure changed ??
             self.scrape_adj_adv()
-        elif wordtype == "verbs":
-            self.scrape_verb()
+        elif wordtype == "substantives":
+            self.scrape_substantive()
+        # elif wordtype == "verbs":         # structure changed
+        #     self.scrape_verb()
 
     # functions for all wordtypes
 
@@ -35,14 +41,27 @@ class NetzverbWordScraper:
             return soup
         return False
 
-    ## works only for urls directly on root
+    def scrape_translations(self, file_content):
+        translations = []
+        for div in file_content.find_all('div'):
+            if div.has_attr('lang'):
+                language = div.get("lang")
+                for span in div.find_all('span'):
+                    if len(span.contents) > 0 and len(span.contents[0]) > 0:
+                        translations.append({
+                            "language": div.get("lang"),
+                            "translation": span.contents[0]
+                        })
+        return translations
+
     def check_if_page_is_valid(self, file_content):
         if file_content.title.string == "503 Service Unavailable":
+            component_download_status_path = 'components.' + self.component + '.download_status'
             self.db.sources[self.collection_name].update_one({
                 '_id': self.document['_id']
             }, {
                 '$set':{
-                    'download_status': False
+                    component_download_status_path: False
                 }
             })
             return False
@@ -51,10 +70,9 @@ class NetzverbWordScraper:
     # Section ADJ ADV
 
     def scrape_adj_adv(self):
-        file_name = 'data_sources/netzverb/adj_adv/declensions/' + self.document['url'].split('/')[-1]
-        file_content = self.get_file_content(file_name)
+        file_content = self.get_file_content(self.file_path)
         if file_content and self.check_if_page_is_valid(file_content):
-            print(file_name)
+            print(self.file_path)
             self.db.sources[self.collection_name].update_one({
                 '_id': self.document['_id']
             }, {
@@ -92,10 +110,108 @@ class NetzverbWordScraper:
             strong_declensions_scraped[types[counter]] = str(li).split('\n')[2].split(', ')
         return strong_declensions_scraped
 
+
+    # Section SUBSTANTIVES
+
+    def scrape_substantive(self):
+        file_content = self.get_file_content(self.file_path)
+        if file_content and self.check_if_page_is_valid(file_content):
+            print(self.file_path)
+            component_scrape_status_path = 'components.' + self.component + '.scrape_status'
+            component_scraped_date_path = 'components.' + self.component + '.scraped_date'
+            if self.component == "declensions":
+                updated_content = {
+                    'word': self.scrape_substantive_word(file_content),
+                    component_scrape_status_path: True,
+                    component_scraped_date_path: datetime.now(),
+                    'scraped_content.level': self.scrape_substantive_level(file_content),
+                    'scraped_content.declensions': {
+                        'singular': self.scrape_substantive_declensions(file_content, 0),
+                        'plural': self.scrape_substantive_declensions(file_content, 1),
+                    },
+                    'scraped_content.declension_sorting': ['nom', 'gen', 'dat', 'acc'],
+                    'scraped_content.article': self.scrape_substantive_article(file_content),
+                    'scraped_content.properties': self.scrape_substantive_properties(file_content),
+                    'scraped_content.translations': self.scrape_translations(file_content),
+                }
+                #pprint.pprint(updated_content)
+            elif self.component == "definitions":
+                updated_content = {
+                    component_scrape_status_path: True,
+                    component_scraped_date_path: datetime.now(),
+                    'scraped_content.definitions': self.scrape_substantive_definitions(file_content),
+                }
+            else:
+                return False
+            self.db.sources[self.collection_name].update_one({
+                '_id': self.document['_id']
+            }, {
+                '$set': updated_content
+            })
+
+    def scrape_substantive_word(self, file_content):
+        return file_content.title.string.replace('Deklination ', '').replace(' | Alle Formen, Plural, Übersetzungen, Bedeutung, Downloads, Sprachausgabe', '')
+
+    def scrape_substantive_level(self, file_content):
+        first_section = file_content.find_all('section', class_='rBox rBoxWht')[0]
+        first_paragraph = first_section.find_all('p', class_='rInf')[0]
+        bold = first_paragraph.find_all('b')
+        if len(bold) > 0:
+            return bold[0].contents[0]
+        return ''
+
+    def scrape_substantive_declensions(self, file_content, counter):
+        section = file_content.find_all('section', class_='rBox rBoxTrns')[0]
+        return str(section.find_all('li')[counter]).split('\n')[2].split(', ')
+
+    def scrape_substantive_article(self, file_content):
+        paragraph = str(file_content.find_all('p', class_='vGrnd rCntr')[0])
+        clean = re.compile('<.*?>')
+        return re.sub(clean, '', paragraph).replace('\n','').replace(self.scrape_substantive_word(file_content), '').strip()
+
+    def scrape_substantive_properties(self, file_content):
+        first_section = file_content.find_all('section', class_='rBox rBoxWht')[0]
+        first_paragraph = first_section.find_all('p', class_='rInf')[0]
+        if len(first_paragraph.find_all('b')) > 0:
+            first_paragraph.contents.pop(0)
+            first_paragraph.contents.pop(0)
+        properties = str(first_paragraph.contents[0]).replace('\n', '').split(' ·')
+        return list(filter(None, properties))
+
+    def scrape_substantive_definitions(self, file_content):
+        definitions = []
+        for div in file_content.find_all('div'):
+            if div.get('class') is not None and 'rAbschnitt' in div.get('class'):
+                for section in div.find_all('section'):
+                    definition = {}
+                    if 'wNr' in section.get('class'):
+                        for div in section.find_all('div'):
+                            if div.get('class') is not None and ('wBst4' in div.get('class') or 'wBst2' in div.get('class') or 'wBst1' in div.get('class')):
+                                sub_defs = []
+                                for li in div.find_all('li'):
+                                    sub_defs.append(li.contents[0].strip())
+                                for a in div.find_all('a'):
+                                    sub_defs.append(a.contents[0].strip())
+                                definition[div.h3.contents[0].lower().replace(' ', '_').replace('_(opposite)', '').replace('-', '_').replace('beschreibungen', 'descriptions').replace('antonyme', 'antonyms').replace('_(gegenteil)', '').replace('oberbegriffe', 'generic_terms').replace('unterbegriffe', 'subterms').replace('synonyme', 'synonyms')] = sub_defs
+                            if div.get('class') is not None and 'wBst6' in div.get('class'):
+                                definition['translations'] = []
+                                paragraph = div.find_all('p')
+                                translations_in_paragraph = str(paragraph[0]).replace('\n', '').replace('<p>', '').replace('</p>', '').split('<img height="12" src="/bedeutungen/')
+                                for t in translations_in_paragraph:
+                                    if '.svg' in t:
+                                        tt = t.split('.svg" width="12"/>')
+                                        for translation in tt[1].split(', '):
+                                            definition['translations'].append({
+                                                'language': tt[0],
+                                                'translation': translation.strip()
+                                            })
+                        definitions.append(definition)
+        return definitions
+
     # Section VERBS
 
     def scrape_verb(self):
-        self.db..update_one({
+        self.db[self.collection_name].update_one({
             '_id': self.document['_id']
         }, {
             '$set':{
@@ -125,26 +241,6 @@ class NetzverbWordScraper:
                 'license': 'CC-BY-SA 3.0'
             }
         })
-
-    def scrape_translations(self):
-        file_name = 'data_sources/verblisten/conjugations/' + self.word + '.htm'
-        if Path(file_name).is_file():
-            f = open(file_name, "r")
-            soup = BeautifulSoup(f.read(), 'html.parser')
-            f.close()
-            translations = []
-            for div in soup.find_all('div'):
-                if div.has_attr('lang'):
-                    language = div.get("lang")
-                    for span in div.find_all('span'):
-                        if len(span.contents) > 0 and len(span.contents[0]) > 0:
-                            translations.append({
-                                "language": div.get("lang"),
-                                # "source": 'verbformen.de',
-                                # "license": 'CC-BY-SA 3.0',
-                                "translation": span.contents[0]
-                            })
-        return translations
 
     def scrape_level(self):
         file_name = 'data_sources/verblisten/definitions/' + self.word + '.htm'
@@ -357,13 +453,17 @@ def scrape_missing_files():
     # for v in tqdm(db.sources.verblisten.find({'scrape_status':False},{'_id':1, word':1})):    
     #     NetzverbWordScraper(v['_id'])
 
-# only valid vor adj right now
-def scrape_new_files(wordtype):
-    db = connect_mongo_db()
-    collection_name = 'netzverb_' + wordtype
-    for word in db.sources[collection_name].find({'scrape_status':False,'download_status':True},{'_id':1}).sort("url",-1):
-        NetzverbWordScraper(wordtype, word['_id'])
 
 if __name__ == "__main__":
-    #scrape_missing_files()
-    scrape_new_files('adj_adv')
+    db = connect_mongo_db()
+    
+    wordtypes = {
+        'substantives': ['declensions', 'definitions']
+    }
+
+    for wordtype, components in wordtypes.items():
+        collection_name = 'netzverb_' + wordtype
+        for component in components:
+            component_scrape_status_path = 'components.' + component + '.scrape_status'
+            for word in db.sources[collection_name].find({component_scrape_status_path: False},{'_id': 1}).limit(1000000000):
+                NetzverbWordScraper(word['_id'], wordtype, component)
