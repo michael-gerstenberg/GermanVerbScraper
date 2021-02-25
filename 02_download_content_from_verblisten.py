@@ -1,11 +1,12 @@
-import requests
-# import shutil
-import time
-from bs4 import BeautifulSoup
-from captcha import solve_captcha_netzverb
-from mongo_db import connect_mongo_db
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
+import time
+
+from bs4 import BeautifulSoup
+import requests
+
+from mongo_db import connect_mongo_db
+from captcha import solve_captcha_netzverb
 
 class NetzverbPageDownload:
 
@@ -20,7 +21,7 @@ class NetzverbPageDownload:
             self.download_content_captcha_safe()
             self.save_file()
             self.mark_page_as_downloaded()
-            
+
     def connect_db(self):
         db = connect_mongo_db()
         return db.sources[self.collection_name]
@@ -54,7 +55,7 @@ class NetzverbPageDownload:
                         time.sleep(5)
 
     def download_content(self):
-        # here remove the request_is_Failing ... put into other 
+        # here remove the request_is_Failing ... put into other
         print('Downloading ' + self.component + ' from ' + self.url)
         request_is_failing = True
         while(request_is_failing):
