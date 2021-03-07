@@ -12,9 +12,9 @@ def solve_captcha(img_path):
     job.join()
     return job.get_captcha_text()
 
-def solve_captcha_netzverb(url, image_url):
+def request_netzverb_captcha(url):
     filename = 'captcha.png'
-    r = requests.get(image_url, stream = True)
+    r = requests.get(get_netzverb_captcha_url(url), stream = True)
     if r.status_code == 200:
         r.raw.decode_content = True
         with open(filename,'wb') as f:
@@ -37,3 +37,21 @@ def solve_captcha_netzverb(url, image_url):
     else:
         print('Image couldn\'t be retrieved. Trying again ...')
         return
+
+def solve_netzverb_captcha(url):
+    while True:
+        try:
+            request_netzverb_captcha(url)
+            return
+        except:
+            print('Captcha solving failed. Trying again ...')
+            time.sleep(5)
+
+def get_netzverb_captcha_url(url):
+    if 'verbformen.de' in url:
+        return 'https://www.verbformen.de/zugriffe/captcha.png'
+    elif 'woerter.net' in url:
+        return 'http://www.woerter.net/zugriffe/captcha.png'
+    elif 'verben.de' in url:
+        return 'https://www.verben.de/zugriffe/captcha.png'
+    return False
