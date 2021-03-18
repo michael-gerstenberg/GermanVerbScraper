@@ -12,6 +12,15 @@ def solve_captcha(img_path):
     job.join()
     return job.get_captcha_text()
 
+def solve_netzverb_captcha(url):
+    while True:
+        try:
+            request_netzverb_captcha(url)
+            return
+        except:
+            print('Captcha solving failed. Trying again ...')
+            time.sleep(5)
+
 def request_netzverb_captcha(url):
     filename = 'captcha.png'
     r = requests.get(get_netzverb_captcha_url(url), stream = True)
@@ -21,12 +30,11 @@ def request_netzverb_captcha(url):
             shutil.copyfileobj(r.raw, f)
         print('Captcha is getting solved...')
         try:
-            answer = solve_captcha('captcha.png')
+            answer = solve_captcha(filename)
         except:
             return False
         browser = mechanicalsoup.StatefulBrowser()
         browser.open(url)
-        # browser.select_form().print_summary()
         browser.select_form()
         try:
             browser["captcha"] = answer
@@ -37,15 +45,6 @@ def request_netzverb_captcha(url):
     else:
         print('Image couldn\'t be retrieved. Trying again ...')
         return
-
-def solve_netzverb_captcha(url):
-    while True:
-        try:
-            request_netzverb_captcha(url)
-            return
-        except:
-            print('Captcha solving failed. Trying again ...')
-            time.sleep(5)
 
 def get_netzverb_captcha_url(url):
     if 'verbformen.de' in url:

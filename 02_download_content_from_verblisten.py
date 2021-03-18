@@ -51,8 +51,8 @@ class NetzverbPageDownload:
             f.write(self.page_content)
 
     def mark_page_as_downloaded(self):
-        download_status_path = 'components.' + self.component + '.download_status'
-        download_date_path = 'components.' + self.component + '.downloaded_date'
+        download_status_path = 'components.' + self.component + '.downloaded'
+        download_date_path = 'components.' + self.component + '.last_download'
         self.db_collection.update_one({
             '_id': self.document['_id']
         }, {
@@ -79,7 +79,7 @@ def main():
         collection_name = get_collection_name(wordtype)
         for component in components:
             Path(f'data_sources/netzverb/{wordtype}/{component}/').mkdir(parents=True, exist_ok=True)
-            component_path = 'components.' + component + '.download_status'
+            component_path = 'components.' + component + '.downloaded'
             for word in db.sources[collection_name].find({component_path: False},{'_id': 1}):
                 NetzverbPageDownload(word['_id'], wordtype, component)
 
